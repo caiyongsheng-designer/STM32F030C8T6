@@ -1,0 +1,52 @@
+#include "tim.h"
+#include "main.h"
+#include "usart.h"
+#include "spi.h"
+#include "delay.h"
+#include "spi_low_computer.h"
+
+
+void SPI_LOW_COMPUTER()
+{
+	  struct UART_RECEIVE Uart1_Receive; 
+	  uint8_t SPI_data_len=0;
+	  uint8_t  SPI_receive_data[100];
+    Uart1_Receive = Uart1_Receive_data();
+    if 	(Uart1_Receive.UART1_Receive_Flag != 1)
+		{
+		   if((Uart1_Receive.UART1_Receive_data[0])&&
+				 (Uart1_Receive.UART1_Receive_data[1]==0xa5)&&
+			   (Uart1_Receive.UART1_Receive_data[2]==0x01))
+			 {
+				 switch (Uart1_Receive.UART1_Receive_data[4] )
+				 {
+					 case 1 : 
+						SPI_data_len =  Uart1_Receive.UART1_Receive_data[3]-1;
+					 if(SPI_data_len>=51)
+					 {
+					    DEBUG("可发送字节长度最大为50，超长请重新发送");
+					 }else{
+						  MX_SPI2_Init();
+						  delay_us(100);
+					    SPI_CS_Enable();						 
+					    HAL_SPI_TransmitReceive(&hspi2,Uart1_Receive.UART1_Receive_data+5,
+						                          SPI_receive_data,SPI_data_len, 1000);
+						  SPI_CS_Disable();
+					    for (uint8_t i=0;i<SPI_data_len;i++)
+					    {
+					     DEBUG("Reveive data %x",SPI_receive_data[i]);
+					    }	 
+					 }	
+
+           break;
+					 
+					    default:
+					printf("输入指令错误，请重新输入\r\n");
+				  break;					 
+				 }
+			 }else{
+			 
+			  // printf("未知错误帧\r\n");
+			 }
+		 }
+	 }
